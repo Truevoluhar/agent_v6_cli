@@ -1,0 +1,16 @@
+{
+  "database_url": "postgresql://cli_user:CHANGE_ME@AGENT_SERVER:5432/deepagents",
+  "bifrost_url": "http://AGENT_SERVER:8080/openai",
+  "model": "YOUR_BIFROST_MODEL",
+  "api_key": "YOUR_BIFROST_KEY",
+  "vision_model": "YOUR_VISION_MODEL",
+  "context_tokens": 128000,
+  "max_output_tokens": 8192,
+  "vision_output_tokens": 8192,
+  "request_timeout": 500,
+  "max_tool_rounds": 100,
+  "thinking_enabled": false,
+  "thinking_control": "chat_template_kwargs",
+  "verify_tls": true,
+  "ca_file": ""
+}

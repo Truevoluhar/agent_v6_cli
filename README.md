@@ -78,6 +78,9 @@ Okoljske spremenljivke z večjo prednostjo od konfiguracije:
 | `BIFROST_BASE_URL` | Bifrost OpenAI-compatible base URL. |
 | `BIFROST_MODEL` | Model. |
 | `BIFROST_API_KEY` | Bifrostov ključ za inference; ni skrbniški ključ nadzorne plošče. |
+| `BIFROST_MCP_ENABLED` | Vklop MCP orodij (`true`/`false`). |
+| `BIFROST_MCP_URL` | Bifrost Streamable HTTP MCP naslov, npr. `http://STREZNIK:8080/mcp`. |
+| `BIFROST_MCP_API_KEY` | Izbirni Bearer ključ za MCP, ločen od ključa za inference. |
 | `AGENT_CLI_CONFIG_DIR` | Izbirna mapa osebne konfiguracije. |
 | `AGENT_CLI_STATE_DIR` | Izbirna mapa lokalnih logov, opravil, velikih rezultatov in kazalcev pogovorov. |
 
@@ -140,7 +143,19 @@ agent-cli logout
 - Veliki rezultati: poln rezultat ostane v lokalnem uporabniškem stanju, model dobi označen predogled in `artifact_id`; celoto lahko prebere z `read_tool_result`. Ohranitev izhoda ni omejena na predogled.
 - Spomin: Postgresov uporabniški spomin z verzijskim preverjanjem, ki prepreči tiho prepisovanje z drugega računalnika.
 
-Orodja se izvajajo lokalno; Bifrost pošiljamo prazna filtra MCP (`x-bf-mcp-include-clients`, `x-bf-mcp-include-tools`), da model ne dobi pomešanih strežniških MCP orodij. Na starejših prehodih brez podpore tem filtrom naj administrator uporabi namenski virtualni ključ brez MCP orodij. Bifrost je LLM prehod, ne izvajalno okolje tega CLI-ja.
+CLI podpira tudi Bifrostova MCP orodja prek Streamable HTTP, enako kot `agent_v6_deep`. Vklopite jih z `agent-cli configure` ali v uporabniškem `config.json` nastavite:
+
+```json
+{
+  "bifrost_mcp_enabled": true,
+  "bifrost_mcp_url": "http://STREZNIK:8080/mcp",
+  "bifrost_mcp_api_key": "VAS_MCP_KLJUC"
+}
+```
+
+To so dodatna polja obstoječe konfiguracije. Ključ je izbiren, če ga MCP vmesnik ne zahteva. Privzeto je MCP izključen. `agent-cli doctor` preveri povezavo in izpiše odkrite opise orodij. Ob zagonu pogovora CLI pridobi celoten seznam MCP orodij in jih ponudi modelu skupaj z lokalnimi; imena `bifrost_…` preprečijo prekrivanje z lokalnimi orodji. Klici gredo prek MCP na strežnik in se beležijo med korake pogovora; veliki rezultati uporabljajo isti predogled in `read_tool_result`. Napake orodij se vrnejo modelu, neuspešna začetna povezava pa ustavi zagon pogovora. Klici se ne ponavljajo samodejno. MCP uporablja `verify=False`, skladno z interno Bifrost politiko v `agent_v6_deep`; nastavitev `verify_tls` velja za modelsko povezavo.
+
+Pri modelskih zahtevah ostaneta prazna filtra `x-bf-mcp-include-clients` in `x-bf-mcp-include-tools`: model dobi izrecno registrirane sheme, CLI pa izvede in zabeleži klice prek MCP. Tako prehod sam ne dodaja ali izvaja dodatnih orodij mimo CLI-jeve zanke. Lokalna datotečna in shell orodja še vedno delujejo na uporabnikovem računalniku; MCP orodja delujejo v okolju svojega strežnika.
 
 ## Pogovori, prekinitve in obseg
 

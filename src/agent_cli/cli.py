@@ -49,6 +49,14 @@ def main(argv=None):
             config.api_key=getpass.getpass('Bifrost key (blank keeps current): ') or config.api_key
             config.vision_model=input('Vision model ['+(config.vision_model or 'same as main')+']; enter - to use main: ').strip() or config.vision_model
             if config.vision_model=='-':config.vision_model=''
+            enabled=input('Enable Bifrost MCP tools? ['+('yes' if config.bifrost_mcp_enabled else 'no')+']: ').strip().lower()
+            if enabled:
+                if enabled not in ('yes','no','y','n'):raise ValueError('Enter yes or no for MCP')
+                config.bifrost_mcp_enabled=enabled in ('yes','y')
+            if config.bifrost_mcp_enabled:
+                config.bifrost_mcp_url=input('Bifrost MCP URL ['+config.bifrost_mcp_url+']: ').strip() or config.bifrost_mcp_url
+                if not config.bifrost_mcp_url:raise ValueError('Bifrost MCP URL is required')
+                config.bifrost_mcp_api_key=getpass.getpass('Bifrost MCP key (blank keeps current): ') or config.bifrost_mcp_api_key
             config.save();console.print('Saved:',str(config_dir()/'config.json'));return 0
         db=Database(config.database_url,get_token(config))
         if args.command=='db-init':
@@ -70,6 +78,12 @@ def main(argv=None):
             model=Model(config)
             try:
                 response=model.client.get('models');console.print('Bifrost /models HTTP:',response.status_code)
+                if config.bifrost_mcp_enabled:
+                    from .mcp import BifrostMCP
+                    registry={};names=BifrostMCP(config).register(registry)
+                    console.print('Bifrost MCP tools:',len(names))
+                    for name in names:console.print('  '+registry[name].description,markup=False)
+                else:console.print('Bifrost MCP: disabled')
             finally:model.close()
             console.print('Native filesystem/shell access uses your OS account. File tools constrain paths to the selected root.');return 0
         if args.command=='logout':
@@ -125,6 +139,8 @@ def main(argv=None):
                 try:return agent.run(thread,message)
                 finally:indicator[0]=None
         try:
+            tools.initialize_mcp(config)
+            if config.bifrost_mcp_enabled:console.print('Bifrost MCP tools:',len(tools.mcp_names))
             message=getattr(args,'message',None)
             if message is not None:
                 answer=run_turn(message)
@@ -163,7 +179,7 @@ def main(argv=None):
 def safe_error(exc,config=None):
     text=type(exc).__name__+': '+str(exc)
     if config:
-        for secret in (config.database_url,config.api_key):
+        for secret in (config.database_url,config.api_key,config.bifrost_mcp_api_key):
             if secret:text=text.replace(secret,'[redacted]')
     return text
 

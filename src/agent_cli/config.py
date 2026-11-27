@@ -45,15 +45,23 @@ class Config:
     thinking_control:str='chat_template_kwargs'
     verify_tls:bool=True
     ca_file:str=''
+    bifrost_mcp_enabled:bool=False
+    bifrost_mcp_url:str=''
+    bifrost_mcp_api_key:str=''
 
     @classmethod
     def load(cls):
         path=config_dir()/'config.json';raw=json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
         allowed={f.name for f in fields(cls)}
         if set(raw)-allowed:raise ValueError('Unknown config fields: '+', '.join(set(raw)-allowed))
-        for env,key in [('AGENT_CLI_DATABASE_URL','database_url'),('BIFROST_BASE_URL','bifrost_url'),('BIFROST_MODEL','model'),('BIFROST_API_KEY','api_key')]:
+        for env,key in [('AGENT_CLI_DATABASE_URL','database_url'),('BIFROST_BASE_URL','bifrost_url'),('BIFROST_MODEL','model'),('BIFROST_API_KEY','api_key'),('BIFROST_MCP_URL','bifrost_mcp_url'),('BIFROST_MCP_API_KEY','bifrost_mcp_api_key')]:
             if os.environ.get(env):raw[key]=os.environ[env]
+        if 'BIFROST_MCP_ENABLED' in os.environ:
+            value=os.environ['BIFROST_MCP_ENABLED'].strip().lower()
+            if value not in ('true','false','1','0','yes','no','on','off'):raise ValueError('Invalid BIFROST_MCP_ENABLED')
+            raw['bifrost_mcp_enabled']=value in ('true','1','yes','on')
         obj=cls(**raw)
+        if type(obj.bifrost_mcp_enabled) is not bool:raise ValueError('bifrost_mcp_enabled must be a boolean')
         for key in ('context_tokens','max_output_tokens','vision_output_tokens'):
             if type(getattr(obj,key)) is not int or getattr(obj,key)<1:raise ValueError(key+' must be a positive integer')
         if obj.context_tokens<4096:raise ValueError('context_tokens must be at least 4096')

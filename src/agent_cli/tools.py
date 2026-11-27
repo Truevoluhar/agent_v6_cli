@@ -38,6 +38,7 @@ class Tools:
         self.workspace=workspace;self.db=db;self.model=model;self.processes=Processes(workspace,user['user_id'])
         self.results_root=state_dir()/'results'/str(user['user_id'])/workspace.key
         self.registry={}
+        self.mcp_names=[]
         def add(name,desc,props,required,fn):self.registry[name]=Tool(name,desc,params(props,required),fn)
         add('read_tool_result','Read a complete locally stored large tool result by artifact_id, with character pagination.',{'artifact_id':string(),'offset':integer(0),'max_chars':integer(12000,1,100000)},['artifact_id'],self.read_tool_result)
         add('environment','Identify OS, selected workspace and available native shells/tools before executing commands.',{},[],self.environment)
@@ -74,6 +75,11 @@ class Tools:
         add('memory_get','Read this authenticated user\'s PostgreSQL memory with version for optimistic concurrency.',{},[],lambda:db.call('memory_get'))
         add('memory_set','Save durable user preferences/facts to PostgreSQL; first read memory_get. Never store passwords or transient tool dumps.',
             {'content':string(),'version':integer(0)},['content','version'],lambda **kw:db.call('memory_set',**kw))
+
+    def initialize_mcp(self,config):
+        if config.bifrost_mcp_enabled:
+            from .mcp import BifrostMCP
+            self.mcp_names=BifrostMCP(config).register(self.registry)
 
     def execute(self,name,args):
         import jsonschema

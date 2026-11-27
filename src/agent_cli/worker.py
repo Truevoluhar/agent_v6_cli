@@ -20,7 +20,7 @@ def main():
     try:
         env=os.environ.copy();env.update(spec['env']);env.setdefault('PYTHONIOENCODING','utf-8')
         # Do not pass database/session/model credentials to ordinary child commands by default.
-        for key in ('AGENT_CLI_DATABASE_URL','BIFROST_API_KEY','DATABASE_URL'):
+        for key in ('AGENT_CLI_DATABASE_URL','BIFROST_API_KEY','BIFROST_MCP_API_KEY','DATABASE_URL'):
             if key not in spec['env']:env.pop(key,None)
         out=(folder/'stdout.log').open('wb');err=(folder/'stderr.log').open('wb')
         if spec['terminal'] and os.name=='nt':

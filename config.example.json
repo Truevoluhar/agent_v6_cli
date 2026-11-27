@@ -12,5 +12,8 @@
   "thinking_enabled": false,
   "thinking_control": "chat_template_kwargs",
   "verify_tls": true,
-  "ca_file": ""
+  "ca_file": "",
+  "bifrost_mcp_enabled": false,
+  "bifrost_mcp_url": "http://AGENT_SERVER:8080/mcp",
+  "bifrost_mcp_api_key": ""
 }
